@@ -7,15 +7,6 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 from tqdm.notebook import tqdm
 import random
-import logging
-
-logging.basicConfig(
-    filename="training.log",
-    filemode="w",              # 'w' to overwrite, 'a' to append
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
 
 # specify dataset name and model name
 DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
@@ -27,10 +18,10 @@ dataset = load_dataset(DATASET_PATH)
 # Explore the dataset
 # For example, print the column names and display a few sample rows
 # TODO: your code goes here
-logger.info(dataset.column_names)
-logger.info(len(dataset['train']['SMILES']))
-logger.info(len(dataset['train']['label']))
-logger.info(dataset['train'][0])
+print(dataset.column_names)
+print(len(dataset['train']['SMILES']))
+print(len(dataset['train']['label']))
+print(dataset['train'][0])
 
 # define a PyTorch Dataset class for handling SMILES strings and targets
 
@@ -70,8 +61,8 @@ test_set = Subset(dataset['train'], test_indices)
 train_dataset = SMILESDataset(train_set, tokenizer)
 test_dataset = SMILESDataset(test_set, tokenizer)
 
-logger.info(f"Train DataLoader with {len(train_dataset)} data points created.")
-logger.info(f"Test DataLoader with {len(test_dataset)} data points created.")
+print(f"Train DataLoader with {len(train_dataset)} data points created.")
+print(f"Test DataLoader with {len(test_dataset)} data points created.")
 
 # construct Pytorch data loaders for both train and test datasets
 BATCH_SIZE = 16 # adjust based on memory constraints
@@ -131,7 +122,7 @@ for epoch in range(num_epochs):
         optimizer.step()
         total_loss += loss.item() * label.shape[0]
 
-    logger.info(f"Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
+    print(f"SUP: Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
 
 # TODO: your code goes here
 regression_model.eval()
@@ -145,7 +136,7 @@ for i, data in enumerate(tqdm(test_loader)):
     loss = criterion(outputs.squeeze(), label)
     total_loss += loss.item() * label.shape[0]
 
-logger.info(f"Test Loss: {total_loss / len(test_dataset)}")
+print(f"SUP: Test Loss: {total_loss / len(test_dataset)}")
 
 ######### TODO: your code goes here: unsupervised training #########
 from transformers import get_scheduler
@@ -202,14 +193,14 @@ for epoch in range(num_epochs):
         #save model
         unsup_model.save_pretrained("./finetuned-mlm-model")
         tokenizer.save_pretrained("./finetuned-mlm-token")
-        logger.info("Model saved ...")
+        print("Model saved ...")
     else:
         count += 1
 
-    logger.info(f"Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
+    print(f"MLM: Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
 
     if count == 10: # early stop
-        logger.info("Early stop !")
+        print("Early stop !")
         break
 
 ######## TODO: your code goes here for fine-tuning the model MLM ########
@@ -245,7 +236,7 @@ for epoch in range(num_epochs):
         train_loss += loss.item() * label.shape[0]
 
     epoch_loss = train_loss / len(train_dataset)
-    logger.info(f"Epoch {epoch+1}, Loss: {train_loss / len(train_dataset)}")
+    print(f"FT: Epoch {epoch+1}, Loss: {train_loss / len(train_dataset)}")
 
     if epoch_loss < best_loss:
         best_loss = epoch_loss
@@ -264,8 +255,8 @@ for epoch in range(num_epochs):
             loss = criterion(outputs.squeeze(), label)
             test_loss += loss.item() * label.shape[0]
 
-        logger.info(f"Test Loss: {test_loss / len(test_dataset)}")
+        print(f"Test Loss: {test_loss / len(test_dataset)}")
 
     if count == 5: # early stop
-        logger.info("Early stop !")
+        print("Early stop !")
         break
