@@ -5,7 +5,7 @@ from transformers import AutoModel, AutoTokenizer, AutoModelForMaskedLM, DataCol
 from torch.utils.data import DataLoader, Dataset, Subset, random_split
 from sklearn.model_selection import train_test_split
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import random
 
 # specify dataset name and model name
@@ -111,7 +111,7 @@ for epoch in range(num_epochs):
     regression_model.train()
     total_loss = 0
 
-    for i, data in enumerate(tqdm(train_loader)):
+    for data in tqdm(train_loader):
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
@@ -136,7 +136,7 @@ for epoch in range(num_epochs):
         total_loss = 0
 
         with torch.no_grad():
-            for i, data in enumerate(tqdm(test_loader)):
+            for data in tqdm(test_loader):
                 input_ids = data['input_ids'].to(device)
                 attention_mask = data['attention_mask'].to(device)
                 label = data['labels'].to(device)
@@ -237,7 +237,7 @@ for epoch in range(num_epochs):
     finetune_model.train()
     train_loss = 0
 
-    for i, data in enumerate(tqdm(train_loader)):
+    for data in tqdm(train_loader):
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
@@ -261,7 +261,7 @@ for epoch in range(num_epochs):
     finetune_model.eval()
     test_loss = 0
     with torch.no_grad():
-        for i, data in enumerate(tqdm(test_loader)):
+        for data in tqdm(test_loader):
             input_ids = data['input_ids'].to(device)
             attention_mask = data['attention_mask'].to(device)
             label = data['labels'].to(device)
