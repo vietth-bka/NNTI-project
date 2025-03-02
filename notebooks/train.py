@@ -251,15 +251,16 @@ for epoch in range(num_epochs):
         train_loss += loss.item() * label.shape[0]
 
     epoch_loss = train_loss / len(train_dataset)
-    print(f"FT: Epoch {epoch+1}, Loss: {train_loss / len(train_dataset)}")
 
     if epoch_loss < best_loss:
         best_loss = epoch_loss
         count = 0
-        regression_model.model.save_pretrained("./postMLM-model")
-        torch.save(regression_model.regression_head.state_dict(), "./postMLM-model/postMLM_head.pth")
+        finetune_model.model.save_pretrained("./postMLM-model")
+        torch.save(finetune_model.regression_head.state_dict(), "./postMLM-model/postMLM_head.pth")
     else:
         count += 1
+    
+    print(f"FT: Epoch {epoch+1}, Loss: {train_loss / len(train_dataset)}, Count: {count}")
 
     finetune_model.eval()
     test_loss = 0
