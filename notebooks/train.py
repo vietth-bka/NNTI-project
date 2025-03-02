@@ -231,7 +231,7 @@ finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 num_epochs = 100
 optimizer = torch.optim.AdamW(finetune_model.parameters(), lr=5e-5)
 criterion = nn.MSELoss()
-best_loss = 0.0
+best_loss = float('inf')
 count = 0
 
 for epoch in range(num_epochs):
