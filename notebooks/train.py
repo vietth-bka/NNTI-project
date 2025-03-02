@@ -129,7 +129,8 @@ for epoch in range(num_epochs):
     if epoch_loss < best_loss:
         best_loss = epoch_loss
         count = 0    
-        regression_model.save_pretrained("./baseline-model")
+        regression_model.model.save_pretrained("./baseline-model")
+        torch.save(regression_model.regression_head.state_dict(), "./baseline-model/baseline_head.pth")
 
         # TODO: Evaluation
         regression_model.eval()
@@ -148,7 +149,7 @@ for epoch in range(num_epochs):
     else:
         count += 1
 
-    if count == 5: # early stop
+    if count == 10: # early stop
         print("Early stop !")
         break
 
