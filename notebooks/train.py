@@ -102,12 +102,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 regression_model = MoLFormerWithRegressionHead(model).to(device)
 
 ############# TODO: your code goes here: supervised training #############
-num_epochs = 20
+num_epochs = 100
 optimizer = torch.optim.AdamW(regression_model.parameters(), lr=5e-5)
 criterion = nn.MSELoss()
-regression_model.train()
+best_loss, count = float('inf'), 0
 
 for epoch in range(num_epochs):
+    regression_model.train()
     total_loss = 0
 
     for i, data in enumerate(tqdm(train_loader)):
@@ -121,87 +122,100 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * label.shape[0]
-
-    print(f"SUP: Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
-
-# TODO: your code goes here
-regression_model.eval()
-total_loss = 0
-
-for i, data in enumerate(tqdm(test_loader)):
-    input_ids = data['input_ids'].to(device)
-    attention_mask = data['attention_mask'].to(device)
-    label = data['labels'].to(device)
-    outputs = regression_model(input_ids, attention_mask)
-    loss = criterion(outputs.squeeze(), label)
-    total_loss += loss.item() * label.shape[0]
-
-print(f"SUP: Test Loss: {total_loss / len(test_dataset)}")
-
-######### TODO: your code goes here: unsupervised training #########
-from transformers import get_scheduler
-
-# unlabel_dataset = SMILESDataset(train_set, tokenizer, False)
-# print(f"Train DataLoader with {len(unlabel_dataset)} unsupervised data points created.")
-
-unsup_model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME,
-                                                   deterministic_eval=True,
-                                                   trust_remote_code=True).to(device)
-
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer,
-                                                mlm=True,
-                                                mlm_probability=0.15)
-
-train_dataloader = DataLoader(train_dataset,
-                              batch_size=16,
-                              shuffle=True,
-                              collate_fn=data_collator)
-
-optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=5e-5)
-num_epochs = 100
-num_training_steps = num_epochs * len(train_dataloader)
-scheduler = get_scheduler(
-    name="linear",
-    optimizer=optimizer,
-    num_warmup_steps=int(0.1 * num_training_steps),
-    num_training_steps=num_training_steps
-)
-
-unsup_model.train()
-best_loss = float('inf')
-count = 0
-
-for epoch in range(num_epochs):
-    total_loss = 0
-
-    for data in tqdm(train_dataloader):
-        data = {k: v.to(device) for k, v in data.items()}
-        outputs = unsup_model(**data)
-        loss = outputs.loss
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
-        total_loss += loss.item() * data['input_ids'].shape[0]
-
+    
     epoch_loss = total_loss / len(train_dataset)
-
+    print(f"SUP: Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
+    
     if epoch_loss < best_loss:
         best_loss = epoch_loss
-        count = 0
-        #save model
-        unsup_model.save_pretrained("./finetuned-mlm-model")
-        tokenizer.save_pretrained("./finetuned-mlm-token")
-        print("Model saved ...")
+        count = 0    
+        regression_model.save_pretrained("./baseline-model")
+
+        # TODO: Evaluation
+        regression_model.eval()
+        total_loss = 0
+
+        with torch.no_grad():
+            for i, data in enumerate(tqdm(test_loader)):
+                input_ids = data['input_ids'].to(device)
+                attention_mask = data['attention_mask'].to(device)
+                label = data['labels'].to(device)
+                outputs = regression_model(input_ids, attention_mask)
+                loss = criterion(outputs.squeeze(), label)
+                total_loss += loss.item() * label.shape[0]
+
+        print(f"SUP: Test Loss: {total_loss / len(test_dataset)}")
     else:
         count += 1
 
-    print(f"MLM: Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
-
-    if count == 10: # early stop
+    if count == 5: # early stop
         print("Early stop !")
         break
+
+######### TODO: your code goes here: unsupervised training #########
+# from transformers import get_scheduler
+
+# # unlabel_dataset = SMILESDataset(train_set, tokenizer, False)
+# # print(f"Train DataLoader with {len(unlabel_dataset)} unsupervised data points created.")
+
+# unsup_model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME,
+#                                                    deterministic_eval=True,
+#                                                    trust_remote_code=True).to(device)
+
+# data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer,
+#                                                 mlm=True,
+#                                                 mlm_probability=0.15)
+
+# train_dataloader = DataLoader(train_dataset,
+#                               batch_size=16,
+#                               shuffle=True,
+#                               collate_fn=data_collator)
+
+# optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=5e-5)
+# num_epochs = 100
+# num_training_steps = num_epochs * len(train_dataloader)
+# scheduler = get_scheduler(
+#     name="linear",
+#     optimizer=optimizer,
+#     num_warmup_steps=int(0.1 * num_training_steps),
+#     num_training_steps=num_training_steps
+# )
+
+# unsup_model.train()
+# best_loss = float('inf')
+# count = 0
+
+# for epoch in range(num_epochs):
+#     total_loss = 0
+
+#     for data in tqdm(train_dataloader):
+#         data = {k: v.to(device) for k, v in data.items()}
+#         outputs = unsup_model(**data)
+#         loss = outputs.loss
+
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
+#         scheduler.step()
+#         total_loss += loss.item() * data['input_ids'].shape[0]
+
+#     epoch_loss = total_loss / len(train_dataset)
+
+#     if epoch_loss < best_loss:
+#         best_loss = epoch_loss
+#         count = 0
+#         #save model
+#         unsup_model.save_pretrained("./finetuned-mlm-model")
+#         tokenizer.save_pretrained("./finetuned-mlm-token")
+#         print("Model saved ...")
+#     else:
+#         count += 1
+
+#     print(f"MLM: Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
+
+#     if count == 10: # early stop
+#         print("Early stop !")
+#         break
 
 ######## TODO: your code goes here for fine-tuning the model MLM ########
 
@@ -213,7 +227,7 @@ finetuned_mlm_model = AutoModel.from_pretrained(
 
 finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 
-num_epochs = 20
+num_epochs = 100
 optimizer = torch.optim.AdamW(finetune_model.parameters(), lr=5e-5)
 criterion = nn.MSELoss()
 best_loss = 0.0
@@ -257,6 +271,6 @@ for epoch in range(num_epochs):
 
         print(f"Test Loss: {test_loss / len(test_dataset)}")
 
-    if count == 5: # early stop
+    if count == 10: # early stop
         print("Early stop !")
         break
