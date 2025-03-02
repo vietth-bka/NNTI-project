@@ -102,56 +102,56 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 regression_model = MoLFormerWithRegressionHead(model).to(device)
 
 ############# TODO: your code goes here: supervised training #############
-num_epochs = 100
-optimizer = torch.optim.AdamW(regression_model.parameters(), lr=5e-5)
-criterion = nn.MSELoss()
-best_loss, count = float('inf'), 0
+# num_epochs = 100
+# optimizer = torch.optim.AdamW(regression_model.parameters(), lr=5e-5)
+# criterion = nn.MSELoss()
+# best_loss, count = float('inf'), 0
 
-for epoch in range(num_epochs):
-    regression_model.train()
-    total_loss = 0
+# for epoch in range(num_epochs):
+#     regression_model.train()
+#     total_loss = 0
 
-    for data in tqdm(train_loader):
-        input_ids = data['input_ids'].to(device)
-        attention_mask = data['attention_mask'].to(device)
-        label = data['labels'].to(device)
-        optimizer.zero_grad()
-        outputs = regression_model(input_ids, attention_mask)
-        loss = criterion(outputs.squeeze(), label)
+#     for data in tqdm(train_loader):
+#         input_ids = data['input_ids'].to(device)
+#         attention_mask = data['attention_mask'].to(device)
+#         label = data['labels'].to(device)
+#         optimizer.zero_grad()
+#         outputs = regression_model(input_ids, attention_mask)
+#         loss = criterion(outputs.squeeze(), label)
 
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item() * label.shape[0]
+#         loss.backward()
+#         optimizer.step()
+#         total_loss += loss.item() * label.shape[0]
     
-    epoch_loss = total_loss / len(train_dataset)
-    print(f"SUP: Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
+#     epoch_loss = total_loss / len(train_dataset)
+#     print(f"SUP: Epoch {epoch+1}, Loss: {total_loss / len(train_dataset)}")
     
-    if epoch_loss < best_loss:
-        best_loss = epoch_loss
-        count = 0    
-        regression_model.model.save_pretrained("./baseline-model")
-        torch.save(regression_model.regression_head.state_dict(), "./baseline-model/baseline_head.pth")
+#     if epoch_loss < best_loss:
+#         best_loss = epoch_loss
+#         count = 0    
+#         regression_model.model.save_pretrained("./baseline-model")
+#         torch.save(regression_model.regression_head.state_dict(), "./baseline-model/baseline_head.pth")
 
-        # TODO: Evaluation
-        regression_model.eval()
-        total_loss = 0
+#         # TODO: Evaluation
+#         regression_model.eval()
+#         total_loss = 0
 
-        with torch.no_grad():
-            for data in tqdm(test_loader):
-                input_ids = data['input_ids'].to(device)
-                attention_mask = data['attention_mask'].to(device)
-                label = data['labels'].to(device)
-                outputs = regression_model(input_ids, attention_mask)
-                loss = criterion(outputs.squeeze(), label)
-                total_loss += loss.item() * label.shape[0]
+#         with torch.no_grad():
+#             for data in tqdm(test_loader):
+#                 input_ids = data['input_ids'].to(device)
+#                 attention_mask = data['attention_mask'].to(device)
+#                 label = data['labels'].to(device)
+#                 outputs = regression_model(input_ids, attention_mask)
+#                 loss = criterion(outputs.squeeze(), label)
+#                 total_loss += loss.item() * label.shape[0]
 
-        print(f"SUP: Test Loss: {total_loss / len(test_dataset)}")
-    else:
-        count += 1
+#         print(f"SUP: Test Loss: {total_loss / len(test_dataset)}")
+#     else:
+#         count += 1
 
-    if count == 10: # early stop
-        print("Early stop !")
-        break
+#     if count == 10: # early stop
+#         print("Early stop !")
+#         break
 
 ######### TODO: your code goes here: unsupervised training #########
 # from transformers import get_scheduler
@@ -256,6 +256,8 @@ for epoch in range(num_epochs):
     if epoch_loss < best_loss:
         best_loss = epoch_loss
         count = 0
+        regression_model.model.save_pretrained("./postMLM-model")
+        torch.save(regression_model.regression_head.state_dict(), "./postMLM-model/postMLM_head.pth")
     else:
         count += 1
 
