@@ -66,7 +66,7 @@ def hessian_vector_product(loss, model, v):
     return output.clone().detach()
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.1, damp=0.01, recursion_depth=100, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, recursion_depth=100, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
@@ -88,12 +88,12 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.1, damp=0.01, recursion_depth=100, 
 
     for loss in train_loss:
         # LiSSA update: u_next = v + (I - H(z))u
-        u_next = v + (1-damp) * u - hessian_vector_product(loss, model, u)
+        u_next = v + (1-damp) * u - alpha * hessian_vector_product(loss, model, u)
         if torch.norm(u_next - u) < tol:
             u = u_next
             break
         u = u_next
-
+        
     return u.clone().detach()
 
 def s_test_single(train_loader, model, v):
@@ -148,7 +148,7 @@ def compute_influence_per_test(train_loader, model, s_test):
         influence_mat = -torch.matmul(s_test, grads.T) # negative sign as in the formula of I_up,loss.
         influence_row.extend(influence_mat.mean(0))
     
-    return torch.tensor(influence_row)
+    return torch.tensor(influence_row).to(device)
 
 
 def compute_influences(test_loader, train_loader, model):
@@ -173,7 +173,7 @@ def compute_influences(test_loader, train_loader, model):
         # loops in the loops to avoid memory issues
         influence_row = compute_influence_per_test(train_loader, model, s_test)
         # influence_row = influence_row / len(test_loader.dataset) * (-1 / len(train_loader.dataset)) 
-        influence_row = influence_row / len(test_loader.dataset) * (-1 / 3360)
+        influence_row = influence_row / len(test_loader.dataset) * (-1 / 3360) # 3360 is the size of the training dataset of the pretrained model
         influences += influence_row # for a given test img, each row rep
         print("influences:", influences)
     
