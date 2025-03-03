@@ -115,10 +115,10 @@ for epoch in range(num_epochs):
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
-        optimizer.zero_grad()
         outputs = regression_model(input_ids, attention_mask)
         loss = criterion(outputs.squeeze(), label)
 
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * label.shape[0]
