@@ -132,7 +132,7 @@ def s_test_single(train_loader, model, v, r, recursion_depth=16):
             assert label.shape[0] == 1, "Batch size of train_loader should be 1 for memory efficiency."
         
         s_test += LiSSA_iHVP(batch_losses, model, v)
-        print('s_test:', s_test)
+        print('s_test:', s_test.view(-1))
     
     s_test /= r # averaging out all s_test
     

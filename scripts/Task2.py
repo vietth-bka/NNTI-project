@@ -66,7 +66,7 @@ def hessian_vector_product(loss, model, v):
     return output.data
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.001, damp=0.01, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.002, damp=0.01, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
