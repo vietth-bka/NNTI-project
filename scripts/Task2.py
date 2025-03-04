@@ -95,7 +95,7 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
         
     return u.data
 
-def s_test_single(train_loader, r, model, v):
+def s_test_single(train_loader, model, v, r, recursion_depth=16):
     """
     Calculates s_test for a single test image taking into account the whole
     training dataset. s_test = invHessian * nabla(Loss(test_img, model params))
@@ -103,7 +103,7 @@ def s_test_single(train_loader, r, model, v):
     Arguments:
         train_loader: load the train data to compute unbias estimator of Hessian
         r: number of iterations of which to take the avg
-        recursion_depth: batch-size
+        recursion_depth: recursion depth of LiSSA, the higher the better approximation
         as number of iterations * recursion_depth should equal the training dataset size
     Returns:
         s_test: torch tensor, contains s_test for a single test image
@@ -115,16 +115,23 @@ def s_test_single(train_loader, r, model, v):
     model.train()
     print("Computing s_test single, batchsize: ", train_loader.batch_size)
     for _ in tqdm(range(r)):
-        # for data in train_loader:
-        data = next(iter(train_loader))
-        input_ids = data['input_ids'].to(device)
-        attention_mask = data['attention_mask'].to(device)
-        label = data['labels'].to(device)
-        outputs = model(input_ids, attention_mask)
-        batch_losses = (outputs.squeeze() - label)**2
+        # data = next(iter(train_loader))
+        # input_ids = data['input_ids'].to(device)
+        # attention_mask = data['attention_mask'].to(device)
+        # label = data['labels'].to(device)
+        # outputs = model(input_ids, attention_mask)
+        # batch_losses = (outputs.squeeze() - label)**2
+        batch_losses = [] # batch computation doesn't work for large recursion_depth
+        for _ in range(recursion_depth):
+            data = next(iter(train_loader))
+            input_ids = data['input_ids'].to(device)
+            attention_mask = data['attention_mask'].to(device)
+            label = data['labels'].to(device)
+            outputs = model(input_ids, attention_mask)
+            batch_losses.append((outputs.squeeze() - label)**2)
+            assert label.shape[0] == 1, "Batch size of train_loader should be 1 for memory efficiency."
 
         s_test += LiSSA_iHVP(batch_losses, model, v)
-            # break
     
     s_test /= r # averaging out all s_test
     return s_test
@@ -154,7 +161,7 @@ def compute_influence_per_test(ext_loader, model, s_test):
     return torch.tensor(influence_row).to(device)
 
 
-def compute_influences(test_loader, train_loader, ext_loader, model, r=10):
+def compute_influences(test_loader, train_loader, ext_loader, model, r=10, recursion_depth=16):
     """
     Calculates s_test for all test images 
     then for each test image, compute influences of all training points
@@ -172,7 +179,7 @@ def compute_influences(test_loader, train_loader, ext_loader, model, r=10):
         batch_losses = (outputs.squeeze() - label)**2
         v = get_flat_grad(batch_losses, model) # gradients of the losses at a test point, 
         # larger batch size -> faster vectorization but larger size of v => memory issues
-        s_test = s_test_single(train_loader, r, model, v) 
+        s_test = s_test_single(train_loader, model, v, r, recursion_depth)
 
         # loops in the loops to avoid memory issues
         influence_row = compute_influence_per_test(ext_loader, model, s_test) # given s_test of a test img, compute influences of all external imgs
@@ -205,7 +212,7 @@ if __name__ == "__main__":
     print(f"External DataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
     
     BATCH_SIZE = 2 # adjust based on memory constraints
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
     ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)
     
@@ -214,6 +221,6 @@ if __name__ == "__main__":
     regression_model = MoLFormerWithRegressionHead(model).to(device)
     regression_model.regression_head.load_state_dict(torch.load("../03032025/postMLM-model/postMLM_head.pth", weights_only=True))
 
-    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=40)
+    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10, recursion_depth=16)
     np.save("influences.npy", all_influences)
     print(all_influences)
