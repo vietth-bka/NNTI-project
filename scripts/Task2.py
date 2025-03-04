@@ -66,7 +66,7 @@ def hessian_vector_product(loss, model, v):
     return output.data
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.001, damp=0.1, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
@@ -92,7 +92,7 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
             u = u_next.data
             break
         u = u_next.data
-        
+    
     return u.data
 
 def s_test_single(train_loader, model, v, r, recursion_depth=16):
@@ -130,6 +130,7 @@ def s_test_single(train_loader, model, v, r, recursion_depth=16):
             outputs = model(input_ids, attention_mask)
             batch_losses.append(((outputs.squeeze() - label)**2).squeeze())
             assert label.shape[0] == 1, "Batch size of train_loader should be 1 for memory efficiency."
+        
         s_test += LiSSA_iHVP(batch_losses, model, v)
     
     s_test /= r # averaging out all s_test
@@ -208,10 +209,10 @@ if __name__ == "__main__":
     external_dataset = ExternalDataset(ext_data, tokenizer)
 
     print(f"Train    DataLoader with {len(train_dataset)} data points created.") # for Hessian
-    print(f"Test     DataLoader with {len(test_dataset)} data points created.")  # for z_test
+    print(f"Test     DataLoader with {len(test_dataset)} data points created.")  # for s_test
     print(f"External DataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
     
-    BATCH_SIZE = 8 # adjust based on memory constraints
+    BATCH_SIZE = 4 # adjust based on memory constraints
     train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
     ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)

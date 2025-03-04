@@ -61,13 +61,12 @@ def hessian_vector_product(loss, model, v):
     v = v.data
     grad = get_flat_grad(loss, model)
     # grad_dot_v = torch.dot(grad, v)
-    # print(v.shape, grad.shape, loss.dim())
     grad_dot_v = torch.matmul(v, grad)
     output = get_flat_grad(grad_dot_v, model)
     return output.data
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.004, damp=0.01, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
@@ -93,7 +92,7 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
             u = u_next.data
             break
         u = u_next.data
-        
+    
     return u.data
 
 def s_test_single(train_loader, model, v, r, recursion_depth=16):
@@ -131,9 +130,12 @@ def s_test_single(train_loader, model, v, r, recursion_depth=16):
             outputs = model(input_ids, attention_mask)
             batch_losses.append(((outputs.squeeze() - label)**2).squeeze())
             assert label.shape[0] == 1, "Batch size of train_loader should be 1 for memory efficiency."
+        
         s_test += LiSSA_iHVP(batch_losses, model, v)
+        print('s_test:', s_test)
     
     s_test /= r # averaging out all s_test
+    
     return s_test
 
 
