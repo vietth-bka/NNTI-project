@@ -205,7 +205,7 @@ if __name__ == "__main__":
     print(f"External DataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
     
     BATCH_SIZE = 2 # adjust based on memory constraints
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
     ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)
     
@@ -214,6 +214,6 @@ if __name__ == "__main__":
     regression_model = MoLFormerWithRegressionHead(model).to(device)
     regression_model.regression_head.load_state_dict(torch.load("../03032025/postMLM-model/postMLM_head.pth", weights_only=True))
 
-    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10)
+    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=40)
     np.save("influences.npy", all_influences)
     print(all_influences)
