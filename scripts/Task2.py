@@ -211,7 +211,7 @@ if __name__ == "__main__":
     print(f"Test     DataLoader with {len(test_dataset)} data points created.")  # for z_test
     print(f"External DataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
     
-    BATCH_SIZE = 2 # adjust based on memory constraints
+    BATCH_SIZE = 8 # adjust based on memory constraints
     train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
     ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)
