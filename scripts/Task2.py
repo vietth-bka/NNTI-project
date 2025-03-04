@@ -1,12 +1,13 @@
-# import dependencies
+# dev: Hong-Viet Tran
 import torch
-from torch.utils.data import DataLoader, Dataset, Subset, random_split
+from torch.utils.data import DataLoader, Dataset, Subset, SequentialSampler
 from transformers import AutoModel, AutoTokenizer
 from sklearn.model_selection import train_test_split
 from datasets import load_dataset
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import random
 
 from dataloader import SMILESDataset, ExternalDataset
 from model import MoLFormerWithRegressionHead
@@ -24,7 +25,7 @@ def get_flat_grad(loss, model):
     Computes the flattened gradient of a training loss w.r.t. model parameters.
     
     Args:
-        loss: A scalar training loss value.
+        loss: A scalar training loss value or a loss vector.
         model: Any neural network model.
     
     Returns:
@@ -57,16 +58,15 @@ def hessian_vector_product(loss, model, v):
     Returns:
         The Hessian-vector product H * v.
     """
+    v = v.data
     grad = get_flat_grad(loss, model)
-    # print(grad.shape, v.shape)
-    # grad_dot_v = torch.dot(grads, v)
+    # grad_dot_v = torch.dot(grad, v)
     grad_dot_v = torch.matmul(v, grad)
-    # print("grad_dot_v:", grad_dot_v.shape)
     output = get_flat_grad(grad_dot_v, model)
-    return output.clone().detach()
+    return output.data
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, recursion_depth=100, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
@@ -76,7 +76,6 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, recursion_depth=100,
         v: A flattened vector (e.g., gradient of a training loss) to multiply with H^{-1}.
         Here it will be the gradient of the loss at a test point.
         alpha: A small step size.
-        recursion_depth: Maximum number of iterations.
         tol: Tolerance for convergence.
     
     Returns:
@@ -90,32 +89,34 @@ def LiSSA_iHVP(train_loss, model, v, alpha=0.04, damp=0.01, recursion_depth=100,
         # LiSSA update: u_next = v + (I - H(z))u
         u_next = v + (1-damp) * u - alpha * hessian_vector_product(loss, model, u)
         if torch.norm(u_next - u) < tol:
-            u = u_next
+            u = u_next.data
             break
-        u = u_next
+        u = u_next.data
         
-    return u.clone().detach()
+    return u.data
 
-def s_test_single(train_loader, model, v):
+def s_test_single(train_loader, r, model, v):
     """
     Calculates s_test for a single test image taking into account the whole
     training dataset. s_test = invHessian * nabla(Loss(test_img, model params))
 
     Arguments:
-        train_loader: pytorch dataloader, which can load the train data
-        len(train_loader): number of iterations of which to take the avg.
+        train_loader: load the train data to compute unbias estimator of Hessian
+        r: number of iterations of which to take the avg
         recursion_depth: batch-size
         as number of iterations * recursion_depth should equal the training dataset size
     Returns:
         s_test: torch tensor, contains s_test for a single test image
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    s_test = torch.zeros(train_loader.batch_size, num_params).to(device) # ultilizing vectorization, computing multiple s_test at once
+    # num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    s_test = torch.zeros_like(v).to(device) # ultilizing vectorization, computing multiple s_test at once
 
     model.train()
-    print("Computing s_test single")
-    for data in tqdm(train_loader):
+    print("Computing s_test single, batchsize: ", train_loader.batch_size)
+    for _ in tqdm(range(r)):
+        # for data in train_loader:
+        data = next(iter(train_loader))
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
@@ -123,12 +124,13 @@ def s_test_single(train_loader, model, v):
         batch_losses = (outputs.squeeze() - label)**2
 
         s_test += LiSSA_iHVP(batch_losses, model, v)
+            # break
     
-    s_test /= len(train_loader) # averaging out all s_test
+    s_test /= r # averaging out all s_test
     return s_test
 
 
-def compute_influence_per_test(train_loader, model, s_test):
+def compute_influence_per_test(ext_loader, model, s_test):
     """
     Computes the influence function for all trained images given a test point.
     """
@@ -137,7 +139,7 @@ def compute_influence_per_test(train_loader, model, s_test):
 
     print("Computing influence per test img ..")
     influence_row = []
-    for data in train_loader: # loops in the loops to avoid memory issues
+    for data in ext_loader: # ext_loader is not shuffled
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
@@ -146,12 +148,13 @@ def compute_influence_per_test(train_loader, model, s_test):
         
         grads = get_flat_grad(batch_losses, model) # gradient of the loss at a training point
         influence_mat = -torch.matmul(s_test, grads.T) # negative sign as in the formula of I_up,loss.
-        influence_row.extend(influence_mat.mean(0))
+        influence_row.extend(influence_mat.sum(0))
+    assert len(influence_row) == len(ext_loader.dataset), f"dimensional mismatch {len(influence_row)} vs {len(ext_loader.dataset)}"
     
     return torch.tensor(influence_row).to(device)
 
 
-def compute_influences(test_loader, train_loader, model):
+def compute_influences(test_loader, train_loader, ext_loader, model, r=10):
     """
     Calculates s_test for all test images 
     then for each test image, compute influences of all training points
@@ -160,21 +163,23 @@ def compute_influences(test_loader, train_loader, model):
     model.train()
 
     print("Computing influence ..")
-    influences = torch.zeros(len(train_loader.dataset)).to(device)
+    influences = torch.zeros(len(ext_loader.dataset)).to(device)
     for data in tqdm(test_loader):
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         label = data['labels'].to(device)
         outputs = model(input_ids, attention_mask)
         batch_losses = (outputs.squeeze() - label)**2
-        v = get_flat_grad(batch_losses, model) # gradients of the losses at a test point
-        s_test = s_test_single(train_loader, model, v)
+        v = get_flat_grad(batch_losses, model) # gradients of the losses at a test point, 
+        # larger batch size -> faster vectorization but larger size of v => memory issues
+        s_test = s_test_single(train_loader, r, model, v) 
 
         # loops in the loops to avoid memory issues
-        influence_row = compute_influence_per_test(train_loader, model, s_test)
-        # influence_row = influence_row / len(test_loader.dataset) * (-1 / len(train_loader.dataset)) 
-        influence_row = influence_row / len(test_loader.dataset) * (-1 / 3360) # 3360 is the size of the training dataset of the pretrained model
-        influences += influence_row # for a given test img, each row rep
+        influence_row = compute_influence_per_test(ext_loader, model, s_test) # given s_test of a test img, compute influences of all external imgs
+        influence_row = influence_row / len(test_loader.dataset) * (1 / 3360) 
+        # divide by len(test_loader.dataset) to get the average influence of a specific external img on test imgs
+        # 3360 is the size of the training dataset of the pretrained model
+        influences += influence_row
         print("influences:", influences)
     
     return influences.cpu().detach().numpy()
@@ -183,25 +188,32 @@ def compute_influences(test_loader, train_loader, model):
 
 if __name__ == "__main__":
     # TODO: your code goes here
-    dataset = load_dataset(DATASET_PATH)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
     
-    train_dataset = ExternalDataset(ext_data, tokenizer)
-    _, test_indices = train_test_split(range(len(dataset['train'])), test_size=0.2, random_state=42)
+    dataset = load_dataset(DATASET_PATH)
+    train_indices, test_indices = train_test_split(range(len(dataset['train'])), test_size=0.2, random_state=42)
+    test_indices = random.choices(test_indices, k=100) # reduce test size for faster computation
+    train_set = Subset(dataset['train'], train_indices)
     test_set = Subset(dataset['train'], test_indices)
-    test_dataset = SMILESDataset(test_set, tokenizer)
+    
+    train_dataset    = SMILESDataset(train_set, tokenizer)
+    test_dataset     = SMILESDataset(test_set, tokenizer)
+    external_dataset = ExternalDataset(ext_data, tokenizer)
 
-    print(f"Train DataLoader with {len(train_dataset)} data points created.")
-    print(f"Test  DataLoader with {len(test_dataset)} data points created.")
+    print(f"Train    DataLoader with {len(train_dataset)} data points created.") # for Hessian
+    print(f"Test     DataLoader with {len(test_dataset)} data points created.")  # for z_test
+    print(f"External DataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
     
     BATCH_SIZE = 2 # adjust based on memory constraints
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=False) # shuffle=False to keep the order
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)
     
-    model = AutoModel.from_pretrained("../notebooks/postMLM-model", trust_remote_code=True)
+    model = AutoModel.from_pretrained("../03032025/postMLM-model", trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regression_model = MoLFormerWithRegressionHead(model).to(device)
-    regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM-model/postMLM_head.pth", weights_only=True))
+    regression_model.regression_head.load_state_dict(torch.load("../03032025/postMLM-model/postMLM_head.pth", weights_only=True))
 
-    all_influences = compute_influences(test_loader, train_loader, regression_model)
+    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10)
+    np.save("influences.npy", all_influences)
     print(all_influences)
