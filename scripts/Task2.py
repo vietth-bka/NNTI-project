@@ -128,9 +128,8 @@ def s_test_single(train_loader, model, v, r, recursion_depth=16):
             attention_mask = data['attention_mask'].to(device)
             label = data['labels'].to(device)
             outputs = model(input_ids, attention_mask)
-            batch_losses.append((outputs.squeeze() - label)**2)
+            batch_losses.append(((outputs.squeeze() - label)**2).squeeze())
             assert label.shape[0] == 1, "Batch size of train_loader should be 1 for memory efficiency."
-
         s_test += LiSSA_iHVP(batch_losses, model, v)
     
     s_test /= r # averaging out all s_test
@@ -155,6 +154,7 @@ def compute_influence_per_test(ext_loader, model, s_test):
         
         grads = get_flat_grad(batch_losses, model) # gradient of the loss at a training point
         influence_mat = -torch.matmul(s_test, grads.T) # negative sign as in the formula of I_up,loss.
+        influence_mat = influence_mat.cpu().detach().numpy()
         influence_row.extend(influence_mat.sum(0))
     assert len(influence_row) == len(ext_loader.dataset), f"dimensional mismatch {len(influence_row)} vs {len(ext_loader.dataset)}"
     
