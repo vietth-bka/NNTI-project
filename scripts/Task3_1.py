@@ -41,8 +41,7 @@ def loss_based_selection(ext_data, model, tokenizer, n, device):
             label = batch['labels'].to(device)
             outputs = model(input_ids, attention_mask)
             loss = (outputs.squeeze() - label)**2
-            loss = [l.item() for l in loss]
-            losses.extend(loss)
+            losses.extend([l.item() for l in loss])
     
     selected_indices = np.argsort(losses)[-n:] # select n data points with the largest loss
     ext_set = Subset(ext_data, selected_indices)

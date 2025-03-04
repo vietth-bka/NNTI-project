@@ -1,11 +1,0 @@
-{'train': ['SMILES', 'label']}
-4200
-4200
-{'SMILES': 'Cn1c(CN2CCN(CC2)c3ccc(Cl)cc3)nc4ccccc14', 'label': 3.54}
-Train DataLoader with 3360 data points created.
-Test DataLoader with 840 data points created.
-/Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/site-packages/torchvision/io/image.py:14: UserWarning: Failed to load image Python extension: 'dlopen(/Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/site-packages/torchvision/image.so, 0x0006): Library not loaded: @rpath/libjpeg.9.dylib
-  Referenced from: <367D4265-B20F-34BD-94EB-4F3EE47C385B> /Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/site-packages/torchvision/image.so
-  Reason: tried: '/libjpeg.9.dylib' (no such file), '/Users/tranhongviet/Workspace/Computer_Graphics/Denoiser/oidn-2.3.1.arm64.macos/lib/libjpeg.9.dylib' (no such file), '/Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/site-packages/torchvision/../../../libjpeg.9.dylib' (no such file), '/Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/site-packages/torchvision/../../../libjpeg.9.dylib' (no such file), '/Users/tranhongviet/miniconda3/envs/nnti/lib/python3.12/lib-dynload/../../libjpeg.9.dylib' (no such file), '/Users/tranhongviet/miniconda3/envs/nnti/bin/../lib/libjpeg.9.dylib' (no such file)'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
-  warn(
-  0%|          | 0/210 [00:00<?, ?it/s]  0%|          | 1/210 [00:05<17:40,  5.07s/it]  1%|          | 2/210 [00:10<17:47,  5.13s/it]  1%|▏         | 3/210 [00:15<17:24,  5.05s/it]

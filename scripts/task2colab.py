@@ -66,7 +66,7 @@ def hessian_vector_product(loss, model, v):
     return output.data
 
 
-def LiSSA_iHVP(train_loss, model, v, alpha=0.004, damp=0.01, tol=1e-5):
+def LiSSA_iHVP(train_loss, model, v, alpha=0.002, damp=0.01, tol=1e-5):
     """
     Approximates the inverse Hessian-vector product H^{-1}v using LiSSA.
     
@@ -222,5 +222,5 @@ if __name__ == "__main__":
     regression_model = MoLFormerWithRegressionHead(model).to(device)
     regression_model.regression_head.load_state_dict(torch.load("../postMLM-model/postMLM_head.pth", weights_only=True))
 
-    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=40)
+    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10, recursion_depth=16)
     print(all_influences)

@@ -184,7 +184,7 @@ def compute_influences(test_loader, train_loader, ext_loader, model, r=10, recur
 
         # loops in the loops to avoid memory issues
         influence_row = compute_influence_per_test(ext_loader, model, s_test) # given s_test of a test img, compute influences of all external imgs
-        influence_row = influence_row / len(test_loader.dataset) * (1 / 3360) 
+        influence_row = influence_row / len(test_loader.dataset) * (1 / 3360) # 1/n I_up.loss
         # divide by len(test_loader.dataset) to get the average influence of a specific external img on test imgs
         # 3360 is the size of the training dataset of the pretrained model
         influences += influence_row
