@@ -80,9 +80,9 @@ class MoLFormerWithRegressionHead(nn.Module):
 
     def forward(self, input_ids, attention_mask):
         outputs = self.model(input_ids, attention_mask)
-        cls_token = outputs.last_hidden_state[:, 0, :]
-        # sequence_output = outputs[0]
-        # cls_token = sequence_output[:, 0, :]
+        # cls_token = outputs.last_hidden_state[:, 0, :]
+        sequence_output = outputs[0]
+        cls_token = sequence_output[:, 0, :]
         outputs_head = self.regression_head(cls_token)
         return outputs_head
 
@@ -93,7 +93,7 @@ regression_model = MoLFormerWithRegressionHead(model).to(device)
 num_epochs = 100
 
 ############# TODO: your code goes here: supervised training   #############
-save_name = "baseline(3)"
+save_name = "baseline(2)"
 supervised_training(regression_model, 
                     train_loader, 
                     test_loader, 5e-5,
@@ -113,18 +113,18 @@ train_dataloader = DataLoader(train_dataset,
                               shuffle=True,
                               collate_fn=data_collator)
 
-unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(3)", 5e-5, device)
+unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(2)", 5e-5, device)
 
 ############# TODO: your code goes here for fine-tuning the model MLM #############
 finetuned_mlm_model = AutoModel.from_pretrained(
-    "./finetuned-mlm(3)-model",
+    "./finetuned-mlm(2)-model",
     deterministic_eval=True,
     trust_remote_code=True,
 )
 
 finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 
-save_name = "postMLM(3)"
+save_name = "postMLM(2)"
 supervised_training(finetune_model, 
                     train_loader, 
                     test_loader, 5e-5,
