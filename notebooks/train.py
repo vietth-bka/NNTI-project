@@ -80,7 +80,7 @@ def supervised_training(regression_model, train_loader, test_loader, lr, num_epo
     
     run.finish()
 
-def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, device):
+def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, lr, device):
     """
     Train the masked language model with unsupervised learning using early stop and lr scheduler.
     """
@@ -91,7 +91,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         project="NNTI-Task1-unsup",
         # Track hyperparameters and run metadata.
         config={
-            "learning_rate": 5e-5,
+            "learning_rate": lr,
             "architecture": "MLM-MoLFormer",
             "dataset": "SMILES",
             "epochs": num_epochs,
@@ -99,7 +99,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         },
     )
 
-    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=5e-5)
+    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=lr)
     num_training_steps = num_epochs * len(train_loader)
     scheduler = get_scheduler(
         name="linear",

@@ -113,10 +113,9 @@ train_dataloader = DataLoader(train_dataset,
                               shuffle=True,
                               collate_fn=data_collator)
 
-unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(2)", device)
+unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(2)", 5e-5, device)
 
 ############# TODO: your code goes here for fine-tuning the model MLM #############
-save_name = "postMLM(2)"
 finetuned_mlm_model = AutoModel.from_pretrained(
     "./finetuned-mlm(2)-model",
     deterministic_eval=True,
@@ -125,6 +124,7 @@ finetuned_mlm_model = AutoModel.from_pretrained(
 
 finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 
+save_name = "postMLM(2)"
 supervised_training(finetune_model, 
                     train_loader, 
                     test_loader, 5e-5,
