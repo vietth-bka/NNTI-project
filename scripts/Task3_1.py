@@ -13,7 +13,7 @@ from dataloader import SMILESDataset, ExternalDataset
 from model import MoLFormerWithRegressionHead
 
 DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
-MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
+# MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
 
 ext_data = pd.read_csv("../tasks/External-Dataset_for_Task2.csv")
 

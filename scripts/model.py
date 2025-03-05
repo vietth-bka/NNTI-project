@@ -10,8 +10,8 @@ class MoLFormerWithRegressionHead(nn.Module):
 
     def forward(self, input_ids, attention_mask):
         outputs = self.model(input_ids, attention_mask)
-        # cls_token = outputs.last_hidden_state[:, 0, :]
-        sequence_output = outputs[0]
-        cls_token = sequence_output[:, 0, :]
+        cls_token = outputs.last_hidden_state[:, 0, :]
+        # sequence_output = outputs[0]
+        # cls_token = sequence_output[:, 0, :]
         outputs_head = self.regression_head(cls_token)
         return outputs_head
