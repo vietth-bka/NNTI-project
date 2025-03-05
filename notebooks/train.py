@@ -4,26 +4,26 @@ from tqdm import tqdm
 from transformers import get_scheduler
 import wandb
 
-def supervised_training(regression_model, train_loader, test_loader, num_epochs, save_name, device):
+def supervised_training(regression_model, train_loader, test_loader, lr, num_epochs, save_name, device):
     """
     Train the regression model with supervised learning using early stop.
     """
     print(f"Training {save_name} model ...")
     run = wandb.init(
-        # Set the wandb entity where your project will be logged (generally your team name).
+        # Set the wandb name.
         name=save_name,
         # Set the wandb project where this run will be logged.
         project="NNTI-Task1",
         # Track hyperparameters and run metadata.
         config={
-            "learning_rate": 5e-5,
+            "learning_rate": lr,
             "architecture": "MoLFormer",
             "dataset": "SMILES",
             "epochs": num_epochs,
             "batch_size": train_loader.batch_size,
         },
     )
-    optimizer = torch.optim.AdamW(regression_model.parameters(), lr=5e-5)
+    optimizer = torch.optim.AdamW(regression_model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     best_loss, count = float('inf'), 0
 
@@ -85,13 +85,13 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
     Train the masked language model with unsupervised learning using early stop and lr scheduler.
     """
     run = wandb.init(
-        # Set the wandb entity where your project will be logged (generally your team name).
+        # Set the wandb name.
         name=save_name,
         # Set the wandb project where this run will be logged.
-        project="NNTI-Task1",
+        project="NNTI-Task1-unsup",
         # Track hyperparameters and run metadata.
         config={
-            "learning_rate": 5e-5,
+            "learning_rate": 1e-4,
             "architecture": "MLM-MoLFormer",
             "dataset": "SMILES",
             "epochs": num_epochs,
@@ -99,7 +99,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         },
     )
 
-    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=5e-5)
+    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=1e-4)
     num_training_steps = num_epochs * len(train_loader)
     scheduler = get_scheduler(
         name="linear",
@@ -140,7 +140,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         print(f"MLM: Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
         run.log({"train_loss": epoch_loss, "learning rate": optimizer.param_groups[0]['lr']})
 
-        if count == 10: # early stop
+        if count >= 10: # early stop
             print("Early stop !")
             run.finish()
             break

@@ -62,8 +62,8 @@ print(f"Test DataLoader with {len(test_dataset)} data points created.")
 BATCH_SIZE = 16 # adjust based on memory constraints
 
 # TODO: your code goes here
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 # load pre-trained model from HuggingFace
 model = AutoModel.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -93,32 +93,32 @@ regression_model = MoLFormerWithRegressionHead(model).to(device)
 num_epochs = 100
 
 ############# TODO: your code goes here: supervised training   #############
-# save_name = "baseline"
-# supervised_training(regression_model, 
-#                     train_loader, 
-#                     test_loader, 
-#                     num_epochs, 
-#                     save_name, device)
+save_name = "baseline(1)"
+supervised_training(regression_model, 
+                    train_loader, 
+                    test_loader, 5e-5,
+                    num_epochs, 
+                    save_name, device)
 ############# TODO: your code goes here: unsupervised training #############
-# unsup_model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME,
-#                                                    deterministic_eval=True,
-#                                                    trust_remote_code=True).to(device)
+unsup_model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME,
+                                                   deterministic_eval=True,
+                                                   trust_remote_code=True).to(device)
 
-# data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer,
-#                                                 mlm=True,
-#                                                 mlm_probability=0.15)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer,
+                                                mlm=True,
+                                                mlm_probability=0.15)
 
-# train_dataloader = DataLoader(train_dataset,
-#                               batch_size=16,
-#                               shuffle=True,
-#                               collate_fn=data_collator)
+train_dataloader = DataLoader(train_dataset,
+                              batch_size=BATCH_SIZE,
+                              shuffle=True,
+                              collate_fn=data_collator)
 
-# unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm", device)
+unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(1)", device)
 
 ############# TODO: your code goes here for fine-tuning the model MLM #############
-save_name = "postMLM"
+save_name = "postMLM(1)"
 finetuned_mlm_model = AutoModel.from_pretrained(
-    "./finetuned-mlm",
+    "./finetuned-mlm(1)-model",
     deterministic_eval=True,
     trust_remote_code=True,
 )
@@ -127,6 +127,6 @@ finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 
 supervised_training(finetune_model, 
                     train_loader, 
-                    test_loader, 
+                    test_loader, 1e-5,
                     num_epochs, 
                     save_name, device)
