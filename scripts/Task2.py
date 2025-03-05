@@ -217,11 +217,11 @@ if __name__ == "__main__":
     test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
     ext_loader   = DataLoader(external_dataset, batch_size=BATCH_SIZE, shuffle=False)
     
-    model = AutoModel.from_pretrained("../03032025/postMLM-model", trust_remote_code=True)
+    model = AutoModel.from_pretrained("../postMLM(3)-model", trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regression_model = MoLFormerWithRegressionHead(model).to(device)
-    regression_model.regression_head.load_state_dict(torch.load("../03032025/postMLM-model/postMLM_head.pth", weights_only=True))
+    regression_model.regression_head.load_state_dict(torch.load("../postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
-    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10, recursion_depth=16)
-    np.save("influences.npy", all_influences)
+    all_influences = compute_influences(test_loader, train_loader, ext_loader, regression_model, r=10, recursion_depth=20)
+    np.save("influences(3).npy", all_influences)
     print(all_influences)
