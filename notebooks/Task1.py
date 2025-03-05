@@ -96,7 +96,7 @@ num_epochs = 100
 save_name = "baseline(1)"
 supervised_training(regression_model, 
                     train_loader, 
-                    test_loader, 5e-5,
+                    test_loader, 1e-4,
                     num_epochs, 
                     save_name, device)
 ############# TODO: your code goes here: unsupervised training #############
@@ -127,6 +127,6 @@ finetune_model = MoLFormerWithRegressionHead(finetuned_mlm_model).to(device)
 
 supervised_training(finetune_model, 
                     train_loader, 
-                    test_loader, 1e-5,
+                    test_loader, 5e-5,
                     num_epochs, 
                     save_name, device)
