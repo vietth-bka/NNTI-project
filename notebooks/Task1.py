@@ -97,7 +97,7 @@ save_name = "baseline(3)"
 supervised_training(regression_model, 
                     train_loader, 
                     test_loader, 5e-5,
-                    num_epochs, 
+                    num_epochs, "NNTI-Task1",
                     save_name, device)
 ############# TODO: your code goes here: unsupervised training #############
 unsup_model = AutoModelForMaskedLM.from_pretrained(MODEL_NAME,
@@ -128,5 +128,5 @@ save_name = "postMLM(3)"
 supervised_training(finetune_model, 
                     train_loader, 
                     test_loader, 5e-5,
-                    num_epochs, 
+                    num_epochs, "NNTI-Task1",
                     save_name, device)

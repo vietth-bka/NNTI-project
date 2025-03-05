@@ -4,7 +4,7 @@ from tqdm import tqdm
 from transformers import get_scheduler
 import wandb
 
-def supervised_training(regression_model, train_loader, test_loader, lr, num_epochs, save_name, device):
+def supervised_training(regression_model, train_loader, test_loader, lr, num_epochs, project, save_name, device):
     """
     Train the regression model with supervised learning using early stop.
     """
@@ -13,7 +13,7 @@ def supervised_training(regression_model, train_loader, test_loader, lr, num_epo
         # Set the wandb name.
         name=save_name,
         # Set the wandb project where this run will be logged.
-        project="NNTI-Task1",
+        project=project,
         # Track hyperparameters and run metadata.
         config={
             "learning_rate": lr,
