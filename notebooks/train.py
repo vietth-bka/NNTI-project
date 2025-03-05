@@ -91,7 +91,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         project="NNTI-Task1-unsup",
         # Track hyperparameters and run metadata.
         config={
-            "learning_rate": 1e-4,
+            "learning_rate": 5e-5,
             "architecture": "MLM-MoLFormer",
             "dataset": "SMILES",
             "epochs": num_epochs,
@@ -99,7 +99,7 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, devi
         },
     )
 
-    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(unsup_model.parameters(), lr=5e-5)
     num_training_steps = num_epochs * len(train_loader)
     scheduler = get_scheduler(
         name="linear",

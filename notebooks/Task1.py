@@ -93,10 +93,10 @@ regression_model = MoLFormerWithRegressionHead(model).to(device)
 num_epochs = 100
 
 ############# TODO: your code goes here: supervised training   #############
-save_name = "baseline(1)"
+save_name = "baseline(2)"
 supervised_training(regression_model, 
                     train_loader, 
-                    test_loader, 1e-4,
+                    test_loader, 5e-5,
                     num_epochs, 
                     save_name, device)
 ############# TODO: your code goes here: unsupervised training #############
@@ -113,12 +113,12 @@ train_dataloader = DataLoader(train_dataset,
                               shuffle=True,
                               collate_fn=data_collator)
 
-unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(1)", device)
+unsupervised_learning(unsup_model, train_dataloader, 100, "finetuned-mlm(2)", device)
 
 ############# TODO: your code goes here for fine-tuning the model MLM #############
-save_name = "postMLM(1)"
+save_name = "postMLM(2)"
 finetuned_mlm_model = AutoModel.from_pretrained(
-    "./finetuned-mlm(1)-model",
+    "./finetuned-mlm(2)-model",
     deterministic_eval=True,
     trust_remote_code=True,
 )
