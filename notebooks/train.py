@@ -146,3 +146,88 @@ def unsupervised_learning(unsup_model, train_loader, num_epochs, save_name, lr, 
             break
     
     run.finish()
+
+
+def supervised_training_lr_scheduler(regression_model, train_loader, test_loader, lr, num_epochs, project, save_name, device):
+    """
+    Train the regression model with supervised learning using early stop.
+    """
+    print(f"Training {save_name} model ...")
+    run = wandb.init(
+        # Set the wandb name.
+        name=save_name,
+        # Set the wandb project where this run will be logged.
+        project=project,
+        # Track hyperparameters and run metadata.
+        config={
+            "learning_rate": lr,
+            "architecture": "MoLFormer",
+            "dataset": "SMILES",
+            "epochs": num_epochs,
+            "batch_size": train_loader.batch_size,
+        },
+    )
+    optimizer = torch.optim.AdamW(regression_model.parameters(), lr=lr)
+    num_training_steps = num_epochs * len(train_loader)
+    scheduler = get_scheduler(
+        name="linear",
+        optimizer=optimizer,
+        num_warmup_steps=int(0.1 * num_training_steps),
+        num_training_steps=num_training_steps
+    )
+    criterion = nn.MSELoss()
+    best_loss, count = float('inf'), 0
+
+    for epoch in range(num_epochs):
+        regression_model.train()
+        train_loss = 0
+
+        for data in tqdm(train_loader):
+            input_ids = data['input_ids'].to(device)
+            attention_mask = data['attention_mask'].to(device)
+            label = data['labels'].to(device)
+            outputs = regression_model(input_ids, attention_mask)
+            loss = criterion(outputs.squeeze(), label)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+            train_loss += loss.item() * label.shape[0]
+        
+        epoch_loss = train_loss / len(train_loader.dataset)
+        
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            count = 0    
+            regression_model.model.save_pretrained(f"./{save_name}-lrs-model")
+            torch.save(regression_model.regression_head.state_dict(), f"./{save_name}-lrs-model/{save_name}_head.pth")
+        else:
+            count += 1
+
+        print(f"Sup: Epoch {epoch+1}, Loss: {epoch_loss}, Count: {count}")
+
+        ###TODO: Evaluation
+        regression_model.eval()
+        test_loss = 0
+
+        with torch.no_grad():
+            for data in tqdm(test_loader):
+                input_ids = data['input_ids'].to(device)
+                attention_mask = data['attention_mask'].to(device)
+                label = data['labels'].to(device)
+                outputs = regression_model(input_ids, attention_mask)
+                loss = criterion(outputs.squeeze(), label)
+                test_loss += loss.item() * label.shape[0]
+
+        print(f"Sup: Test Loss: {test_loss / len(test_loader.dataset)}")
+        run.log({"train_loss": epoch_loss, 
+                 "test_loss": test_loss / len(test_loader.dataset),
+                 "learning rate": optimizer.param_groups[0]['lr']})
+        
+        if count >= 10: # early stop
+            print("Early stop !")
+            run.finish()
+            break
+    
+    run.finish()

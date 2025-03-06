@@ -10,7 +10,7 @@ from tqdm import tqdm
 import random
 import sys
 sys.path.append("../notebooks")
-from train import supervised_training
+from train import supervised_training, supervised_training_lr_scheduler
 
 from dataloader import SMILESDataset, ExternalDataset
 from model import MoLFormerWithRegressionHead
@@ -89,7 +89,7 @@ def generate_method(choice, ext_data, model=None, tokenizer=None, influences=Non
 if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
-    CHOICE = "loss_based"
+    CHOICE = "influence_based"
     FRACTION = 50
 
     # initialize tokenizer
@@ -118,8 +118,13 @@ if __name__ == "__main__":
 
             # load external data and select data
             ext_set = generate_method("loss_based", ext_data, model_for_data_selection, tokenizer, fraction=FRACTION, device=device)
+        
         elif CHOICE == "random":
             ext_set = generate_method("random", ext_data, fraction=FRACTION)
+
+        elif CHOICE == "influence_based":
+            influences = np.load("./influences(3).npy")
+            ext_set = generate_method("influence_based", ext_data, influences=influences, fraction=FRACTION)
 
         external_dataset = SMILESDataset(ext_set, tokenizer)
         print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
@@ -143,9 +148,17 @@ if __name__ == "__main__":
 
     # start training
     num_epochs = 100
+    # if FRACTION == 0:
     save_name = CHOICE + "_" + str(FRACTION) + "_finetunedMLM"
     supervised_training(regression_model,
                         merged_loader,
                         test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
                         save_name, device)
+    # else:
+    #     save_name = CHOICE + "_" + str(FRACTION) + "_lrs_finetunedMLM"
+    #     supervised_training_lr_scheduler(regression_model,
+    #                         merged_loader,
+    #                         test_loader, 5e-5,
+    #                         num_epochs, "NNTI-Task1",
+    #                         save_name, device)
