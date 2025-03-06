@@ -45,7 +45,8 @@ def loss_based_selection(ext_data, model, tokenizer, n, device):
     if n != 0:
         selected_indices = np.argsort(losses)[-n:] # select n data points with the largest loss
     else:
-        selected_indices = range(len(ext_data))
+        print("No data points selected!")
+        exit(-1)
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
@@ -68,7 +69,7 @@ def influence_based_selection(ext_data, influences, n):
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
-def generate_method(choice, ext_data, model, tokenizer, influences=None, fraction=10, device=torch.device("cpu")):
+def generate_method(choice, ext_data, model=None, tokenizer=None, influences=None, fraction=10, device=torch.device("cpu")):
     allowed_methods = ["random", "loss_based", "influence_based"]
     n = int(fraction * len(ext_data) / 100)
 
@@ -105,21 +106,29 @@ if __name__ == "__main__":
     print(f"Train dataLoader with   {len(train_dataset)} data points created.") # for Hessian
     print(f"Test dataLoader with    {len(test_dataset)} data points created.")  # for z_test
 
-    # model preparation for data selection
-    model = AutoModel.from_pretrained("../notebooks/postMLM(3)-model", deterministic_eval=True, trust_remote_code=True)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_for_data_selection = MoLFormerWithRegressionHead(model).to(device)
-    model_for_data_selection.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
-
-    # load external data and select data
     ext_data = pd.read_csv("../tasks/External-Dataset_for_Task2.csv")
-    ext_set = generate_method(CHOICE, ext_data, model_for_data_selection, tokenizer, fraction=FRACTION, device=device)
-    external_dataset = SMILESDataset(ext_set, tokenizer)
-    print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
 
-    # merge external data with training data
-    merged_dataset = ConcatDataset([train_dataset, external_dataset])
-    print(f"Merged dataLoader with   {len(merged_dataset)} data points created.")
+    if FRACTION != 0:
+        if CHOICE == "loss_based":
+            # model preparation for data selection
+            model = AutoModel.from_pretrained("../notebooks/postMLM(3)-model", deterministic_eval=True, trust_remote_code=True)
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model_for_data_selection = MoLFormerWithRegressionHead(model).to(device)
+            model_for_data_selection.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
+
+            # load external data and select data
+            ext_set = generate_method("loss_based", ext_data, model_for_data_selection, tokenizer, fraction=FRACTION, device=device)
+        elif CHOICE == "random":
+            ext_set = generate_method("random", ext_data, fraction=FRACTION)
+
+        external_dataset = SMILESDataset(ext_set, tokenizer)
+        print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
+
+        # merge external data with training data
+        merged_dataset = ConcatDataset([train_dataset, external_dataset])
+        print(f"Merged dataLoader with   {len(merged_dataset)} data points created.")
+    else:
+        merged_dataset = train_dataset
 
     BATCH_SIZE = 16
     merged_loader   = DataLoader(merged_dataset, batch_size=BATCH_SIZE, shuffle=True)
