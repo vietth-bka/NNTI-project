@@ -102,15 +102,15 @@ if __name__ == "__main__":
     print(f"Train dataLoader with   {len(train_dataset)} data points created.") # for Hessian
     print(f"Test dataLoader with    {len(test_dataset)} data points created.")  # for z_test
 
-    # model preparation
-    model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
+    # model preparation for data selection
+    model = AutoModel.from_pretrained("../notebooks/postMLM(3)-model", deterministic_eval=True, trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    regression_model = MoLFormerWithRegressionHead(model).to(device)
-    regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
+    model_for_data_selection = MoLFormerWithRegressionHead(model).to(device)
+    model_for_data_selection.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
     # load external data and select data
     ext_data = pd.read_csv("../tasks/External-Dataset_for_Task2.csv")
-    ext_set = generate_method(CHOICE, ext_data, regression_model, tokenizer, fraction=FRACTION, device=device)
+    ext_set = generate_method(CHOICE, ext_data, model_for_data_selection, tokenizer, fraction=FRACTION, device=device)
     external_dataset = SMILESDataset(ext_set, tokenizer)
     print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
 
@@ -121,6 +121,13 @@ if __name__ == "__main__":
     BATCH_SIZE = 16
     merged_loader   = DataLoader(merged_dataset, batch_size=BATCH_SIZE, shuffle=True)
     test_loader     = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    # prepare model for training
+    # model preparation
+    model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    regression_model = MoLFormerWithRegressionHead(model).to(device)
+    regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
     # start training
     num_epochs = 100
