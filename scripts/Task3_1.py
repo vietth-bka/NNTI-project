@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import random
+import sys
 sys.path.append("../notebooks")
 from train import supervised_training
 
