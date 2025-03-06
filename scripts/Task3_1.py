@@ -18,8 +18,9 @@ def random_selection(ext_data, n):
     """
     Randomly select n data points from the external dataset.
     """
-    selected_indices = random.choices(range(len(ext_data)), k=n)
-    ext_set = Subset(ext_data, selected_indices)
+    random.seed(42)
+    selected_indices = random.choices(range(len(ext_data)), k=n)    
+    ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
 def loss_based_selection(ext_data, model, tokenizer, n, device):
@@ -41,7 +42,7 @@ def loss_based_selection(ext_data, model, tokenizer, n, device):
             losses.extend([l.item() for l in loss])
     
     selected_indices = np.argsort(losses)[-n:] # select n data points with the largest loss
-    ext_set = Subset(ext_data, selected_indices)
+    ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
 def influence_based_selection(ext_data, influences, n):
@@ -60,7 +61,7 @@ def influence_based_selection(ext_data, influences, n):
     So for smaller dL, we want I_up_loss to be as small as possible. 
     """
     selected_indices = np.argsort(influences)[:n]
-    ext_set = Subset(ext_data, selected_indices)
+    ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
 def generate_method(choice, ext_data, model, tokenizer, influences=None, fraction=10, device=torch.device("cpu")):
@@ -83,7 +84,8 @@ def generate_method(choice, ext_data, model, tokenizer, influences=None, fractio
 if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
-    CHOICE = "random"
+    CHOICE = "loss_based"
+    FRACTION = 30
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -100,15 +102,15 @@ if __name__ == "__main__":
     print(f"Test dataLoader with    {len(test_dataset)} data points created.")  # for z_test
 
     # model preparation
-    model = AutoModel.from_pretrained("../notebooks/postMLM(3)-model", deterministic_eval=True, trust_remote_code=True)
+    model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regression_model = MoLFormerWithRegressionHead(model).to(device)
     regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
     # load external data and select data
     ext_data = pd.read_csv("../tasks/External-Dataset_for_Task2.csv")
-    ext_set = generate_method(CHOICE, ext_data, regression_model, tokenizer, fraction=10, device=device)
-    external_dataset = ExternalDataset(ext_data, tokenizer)
+    ext_set = generate_method(CHOICE, ext_data, regression_model, tokenizer, fraction=FRACTION, device=device)
+    external_dataset = SMILESDataset(ext_set, tokenizer)
     print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
 
     # merge external data with training data
@@ -117,11 +119,11 @@ if __name__ == "__main__":
 
     BATCH_SIZE = 16
     merged_loader   = DataLoader(merged_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    test_loader     = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # start training
     num_epochs = 100
-    save_name = "random_postMLM"
+    save_name = CHOICE + "_" + str(FRACTION) + "_finetunedMLM"
     supervised_training(regression_model,
                         merged_loader,
                         test_loader, 5e-5,
