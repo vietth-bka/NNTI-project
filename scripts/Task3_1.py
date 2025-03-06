@@ -86,7 +86,7 @@ if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
     CHOICE = "loss_based"
-    FRACTION = 30
+    FRACTION = 50
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
