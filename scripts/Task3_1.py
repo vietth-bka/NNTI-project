@@ -33,8 +33,8 @@ def loss_based_selection(ext_data, model, tokenizer, n, device):
     
     model.eval()
     losses = []
-    for batch in ext_loader:
-        with torch.no_grad():
+    with torch.no_grad():
+        for batch in ext_loader:
             input_ids = batch['input_ids'].to(device)
             attention_mask = batch['attention_mask'].to(device)
             label = batch['labels'].to(device)
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
     CHOICE = "loss_based"
-    FRACTION = 30
+    FRACTION = 0
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regression_model = MoLFormerWithRegressionHead(model).to(device)
-    regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
+    # regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
     # start training
     num_epochs = 100
