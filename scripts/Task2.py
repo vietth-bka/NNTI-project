@@ -200,7 +200,7 @@ if __name__ == "__main__":
     
     dataset = load_dataset(DATASET_PATH)
     train_indices, test_indices = train_test_split(range(len(dataset['train'])), test_size=0.2, random_state=42)
-    test_indices = random.choices(test_indices, k=100) # reduce test size for faster computation
+    test_indices = random.sample(test_indices, k=100) # reduce test size for faster computation
     train_set = Subset(dataset['train'], train_indices)
     test_set = Subset(dataset['train'], test_indices)
     

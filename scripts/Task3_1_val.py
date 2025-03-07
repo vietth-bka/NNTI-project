@@ -10,7 +10,7 @@ from tqdm import tqdm
 import random
 import sys
 sys.path.append("../notebooks")
-from train import supervised_training, supervised_training_lr_scheduler
+from train import supervised_training, supervised_training_lr_scheduler, supervised_training_lrs_val
 
 from dataloader import SMILESDataset, ExternalDataset
 from model import MoLFormerWithRegressionHead
@@ -20,7 +20,7 @@ def random_selection(ext_data, n):
     Randomly select n data points from the external dataset.
     """
     random.seed(42)
-    selected_indices = random.choices(range(len(ext_data)), k=n)    
+    selected_indices = random.sample(range(len(ext_data)), k=n)    
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
     CHOICE = "loss_based"
-    FRACTION = 50
+    FRACTION = 0
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -98,14 +98,11 @@ if __name__ == "__main__":
     # original data preparation
     dataset = load_dataset(DATASET_PATH)
     train_indices, test_indices = train_test_split(range(len(dataset['train'])), test_size=0.2, random_state=42)
-    train_set = Subset(dataset['train'], train_indices)
-    test_set = Subset(dataset['train'], test_indices)
+    # train_set = Subset(dataset['train'], train_indices)
+    # test_set = Subset(dataset['train'], test_indices)
+    train_set = [dataset['train'][i] for i in train_indices]
+    test_set = [dataset['train'][i] for i in test_indices]
     
-    train_dataset    = SMILESDataset(train_set, tokenizer)
-    test_dataset     = SMILESDataset(test_set, tokenizer)
-    print(f"Train dataLoader with   {len(train_dataset)} data points created.") # for Hessian
-    print(f"Test dataLoader with    {len(test_dataset)} data points created.")  # for z_test
-
     ext_data = pd.read_csv("../tasks/External-Dataset_for_Task2.csv")
 
     if FRACTION != 0:
@@ -126,39 +123,40 @@ if __name__ == "__main__":
             influences = np.load("./influences(3).npy")
             ext_set = generate_method("influence_based", ext_data, influences=influences, fraction=FRACTION)
 
-        external_dataset = SMILESDataset(ext_set, tokenizer)
-        print(f"External dataLoader with {len(external_dataset)} data points created.") # for \nabla L(z,\theta)
-
-        # merge external data with training data
-        merged_dataset = ConcatDataset([train_dataset, external_dataset])
-        print(f"Merged dataLoader with   {len(merged_dataset)} data points created.")
     else:
-        merged_dataset = train_dataset
+        ext_set = []
+
+    merged_set = train_set + ext_set
+    actual_train_indices, val_indices = train_test_split(range(len(merged_set)), test_size=0.15, random_state=42)
+    actual_train_set = [merged_set[i] for i in actual_train_indices]
+    val_set          = [merged_set[i] for i in val_indices]
+
+    train_dataset = SMILESDataset(actual_train_set, tokenizer)
+    val_dataset   = SMILESDataset(val_set, tokenizer)
+    test_dataset  = SMILESDataset(test_set, tokenizer)
+
+    print("Data added:", len(ext_set), " , total data points:", len(merged_set))
+    print(f"Train dataLoader with    {len(train_dataset)} data points created.")
+    print(f"Validate dataLoader with {len(val_dataset)} data points created.")
+    print(f"Test dataLoader with     {len(test_dataset)} data points created.") 
 
     BATCH_SIZE = 16
-    merged_loader   = DataLoader(merged_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader     = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader   = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    test_loader  = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # prepare model for training
     # model preparation
     model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     regression_model = MoLFormerWithRegressionHead(model).to(device)
-    # regression_model.regression_head.load_state_dict(torch.load("../notebooks/postMLM(3)-model/postMLM(3)_head.pth", weights_only=True))
 
     # start training
-    num_epochs = 100
-    if FRACTION == 0:
-        save_name = CHOICE + "_" + str(FRACTION) + "_finetunedMLM"
-        supervised_training(regression_model,
-                            merged_loader,
-                            test_loader, 5e-5,
-                            num_epochs, "NNTI-Task1",
-                            save_name, device)
-    else:
-        save_name = CHOICE + "_" + str(FRACTION) + "_lrs_finetunedMLM"
-        supervised_training_lr_scheduler(regression_model,
-                            merged_loader,
-                            test_loader, 5e-5,
-                            num_epochs, "NNTI-Task1",
-                            save_name, device)
+    num_epochs = 100        
+    save_name = CHOICE + "_" + str(FRACTION) + "_val_lrs_ftMLM"
+    supervised_training_lrs_val(regression_model,
+                        train_loader,
+                        val_loader,
+                        test_loader, 5e-5,
+                        num_epochs, "NNTI-Task1",
+                        save_name, device)

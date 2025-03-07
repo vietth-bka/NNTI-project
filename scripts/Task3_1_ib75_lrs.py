@@ -20,7 +20,7 @@ def random_selection(ext_data, n):
     Randomly select n data points from the external dataset.
     """
     random.seed(42)
-    selected_indices = random.choices(range(len(ext_data)), k=n)    
+    selected_indices = random.sample(range(len(ext_data)), k=n)    
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
     CHOICE = "influence_based"
-    FRACTION = 50
+    FRACTION = 75
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -148,17 +148,17 @@ if __name__ == "__main__":
 
     # start training
     num_epochs = 100
-    # if FRACTION == 0:
-    save_name = CHOICE + "_" + str(FRACTION) + "_finetunedMLM"
-    supervised_training(regression_model,
-                        merged_loader,
-                        test_loader, 5e-5,
-                        num_epochs, "NNTI-Task1",
-                        save_name, device)
-    # else:
-    #     save_name = CHOICE + "_" + str(FRACTION) + "_lrs_finetunedMLM"
-    #     supervised_training_lr_scheduler(regression_model,
-    #                         merged_loader,
-    #                         test_loader, 5e-5,
-    #                         num_epochs, "NNTI-Task1",
-    #                         save_name, device)
+    if FRACTION == 0:
+        save_name = CHOICE + "_" + str(FRACTION) + "_finetunedMLM"
+        supervised_training(regression_model,
+                            merged_loader,
+                            test_loader, 5e-5,
+                            num_epochs, "NNTI-Task1",
+                            save_name, device)
+    else:
+        save_name = CHOICE + "_" + str(FRACTION) + "_lrs_finetunedMLM"
+        supervised_training_lr_scheduler(regression_model,
+                            merged_loader,
+                            test_loader, 5e-5,
+                            num_epochs, "NNTI-Task1",
+                            save_name, device)
