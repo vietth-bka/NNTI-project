@@ -147,7 +147,7 @@ if __name__ == "__main__":
     val_dataset   = SMILESDataset(val_set, tokenizer)
     test_dataset  = SMILESDataset(test_set, tokenizer)
 
-    print("Data added:", len(ext_set), " , total data points:", len(merged_set))
+    print("Data added:", len(ext_set), " , total data points:", len(train_set + ext_set))
     print(f"Train dataLoader with    {len(train_dataset)} data points created.")
     print(f"Validate dataLoader with {len(val_dataset)} data points created.")
     print(f"Test dataLoader with     {len(test_dataset)} data points created.") 
