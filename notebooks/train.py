@@ -233,7 +233,7 @@ def supervised_training_lr_scheduler(regression_model, train_loader, test_loader
     run.finish()
 
 
-def supervised_training_lrs_val(regression_model, train_loader, val_loader, test_loader, lr, num_epochs, project, save_name, device):
+def supervised_training_lrs_val(regression_model, train_loader, val_loader, test_loader, lr, num_epochs, project, save_name, device, es=10):
     """
     Train the regression model with supervised learning using early stop.
     """
@@ -325,7 +325,7 @@ def supervised_training_lrs_val(regression_model, train_loader, val_loader, test
                  "test_loss": test_losses / len(test_loader.dataset),
                  "learning rate": optimizer.param_groups[0]['lr']})
         
-        if count >= 10: # early stop
+        if count >= es: # early stop
             print("Early stop !")
             run.finish()
             break

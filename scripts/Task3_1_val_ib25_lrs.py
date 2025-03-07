@@ -171,4 +171,4 @@ if __name__ == "__main__":
                         val_loader,
                         test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
-                        save_name, device)
+                        save_name, device, 25)

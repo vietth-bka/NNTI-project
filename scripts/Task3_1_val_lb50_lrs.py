@@ -20,7 +20,7 @@ def random_selection(ext_data, n):
     Randomly select n data points from the external dataset.
     """
     random.seed(42)
-    selected_indices = random.sample(range(len(ext_data)), k=n)    
+    selected_indices = random.sample(range(len(ext_data)), k=n)
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 
@@ -89,8 +89,8 @@ def generate_method(choice, ext_data, model=None, tokenizer=None, influences=Non
 if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
-    CHOICE = "influence_based"
-    FRACTION = 75
+    CHOICE = "loss_based"
+    FRACTION = 50
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
