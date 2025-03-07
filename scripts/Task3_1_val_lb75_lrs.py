@@ -131,17 +131,9 @@ if __name__ == "__main__":
     # actual_train_set = [merged_set[i] for i in actual_train_indices]
     # val_set          = [merged_set[i] for i in val_indices]
 
-    train_indices_1, val_indices_1 = train_test_split(range(len(train_set)), test_size=0.15, random_state=42)
-    train_1, val_1 = [train_set[i] for i in train_indices_1], [train_set[i] for i in val_indices_1]
-    
-    if len(ext_set) > 0:
-        train_indices_2, val_indices_2 = train_test_split(range(len(ext_set)), test_size=0.15, random_state=42)
-        train_2, val_2 = [ext_set[i] for i in train_indices_2], [ext_set[i] for i in val_indices_2]
-        actual_train_set = train_1 + train_2
-        val_set = val_1 + val_2
-    else:
-        actual_train_set = train_1
-        val_set = val_1
+    subtrain_indices, val_indices = train_test_split(range(len(train_set)), test_size=0.15, random_state=42)
+    actual_train_set = [train_set[i] for i in subtrain_indices] + ext_set
+    val_set = [train_set[i] for i in val_indices]
 
     train_dataset = SMILESDataset(actual_train_set, tokenizer)
     val_dataset   = SMILESDataset(val_set, tokenizer)
