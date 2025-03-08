@@ -298,8 +298,8 @@ def supervised_training_lrs_val(regression_model, train_loader, val_loader, test
         if epoch_val_loss < best_loss:
             best_loss = epoch_val_loss
             count = 0
-            regression_model.model.save_pretrained(f"./{save_name}-lrs-model")
-            torch.save(regression_model.regression_head.state_dict(), f"./{save_name}-lrs-model/{save_name}_head.pth")
+            regression_model.model.save_pretrained(f"./{save_name}_model")
+            torch.save(regression_model.regression_head.state_dict(), f"./{save_name}_model/{save_name}_head.pth")
         else:
             count += 1
 

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
-from model import MoLFormerWithRegressionHead
+from model import MoLFormerWithRegressionHead, HiddenModel
 from Task3_1 import generate_method
 from dataloader import SMILESDataset
 
@@ -129,7 +129,8 @@ if __name__ == "__main__":
 
     # prepare model for training
     # model preparation
-    model = AutoModel.from_pretrained("../notebooks/finetuned-mlm(3)-model", deterministic_eval=True, trust_remote_code=True)
+    model = AutoModel.from_pretrained("../notebooks/baseline_0_val_lrs_ftMLM-lrs-model", deterministic_eval=True, trust_remote_code=True)
+    model = HiddenModel(model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_trainable_parameters(model)
 
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     else:
         print("INVALID peft!")
         exit(-1)
-
+    regression_model.regression_head.load_state_dict(torch.load("../notebooks/baseline_0_val_lrs_ftMLM-lrs-model/baseline_0_val_lrs_ftMLM_head.pth", weights_only=True))
     # start training
     num_epochs = 100        
     save_name = f"{CHOICE}_{PEFT}_{str(FRACTION)}_val_lrs_ftMLM"
@@ -151,4 +152,4 @@ if __name__ == "__main__":
                         val_loader,
                         test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
-                        save_name, device)
+                        save_name, device, 25)
