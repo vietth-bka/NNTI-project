@@ -156,7 +156,7 @@ if __name__ == "__main__":
                             num_epochs, "NNTI-Task1",
                             save_name, device)
     else:
-        save_name = CHOICE + "_" + str(FRACTION) + "_lrs_finetunedMLM"
+        save_name = CHOICE + "_-" + str(FRACTION) + "_lrs_finetunedMLM"
         supervised_training_lr_scheduler(regression_model,
                             merged_loader,
                             test_loader, 5e-5,

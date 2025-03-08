@@ -110,7 +110,8 @@ if __name__ == "__main__":
         ext_set = []
 
     subtrain_indices, val_indices = train_test_split(range(len(train_set)), test_size=0.15, random_state=42)
-    actual_train_set = [train_set[i] for i in subtrain_indices] + ext_set
+    # actual_train_set = [train_set[i] for i in subtrain_indices] + ext_set
+    actual_train_set = ext_set
     val_set = [train_set[i] for i in val_indices]
 
     train_dataset = SMILESDataset(actual_train_set, tokenizer)
@@ -129,7 +130,7 @@ if __name__ == "__main__":
 
     # prepare model for training
     # model preparation
-    model = AutoModel.from_pretrained("../notebooks/baseline_0_val_lrs_ftMLM-lrs-model", deterministic_eval=True, trust_remote_code=True)
+    model = AutoModel.from_pretrained("../baseline_0_val_lrs_ftMLM-lrs-model", deterministic_eval=True, trust_remote_code=True)
     model = HiddenModel(model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_trainable_parameters(model)
@@ -146,13 +147,15 @@ if __name__ == "__main__":
     else:
         print("INVALID peft!")
         exit(-1)
-    regression_model.regression_head.load_state_dict(torch.load("../notebooks/baseline_0_val_lrs_ftMLM-lrs-model/baseline_0_val_lrs_ftMLM_head.pth", weights_only=True))
+    regression_model.regression_head.load_state_dict(torch.load("../baseline_0_val_lrs_ftMLM-lrs-model/baseline_0_val_lrs_ftMLM_head.pth", weights_only=True))
+    print(regression_model.regression_head.weight.requires_grad)
+    print(regression_model.regression_head.bias.requires_grad)
     # start training
-    num_epochs = 100        
+    num_epochs = 50
     save_name = f"{CHOICE}_{PEFT}_{str(FRACTION)}_val_lrs_ftMLM"
     supervised_training_lrs_val(regression_model,
                         train_loader,
                         val_loader,
-                        test_loader, 5e-5,
+                        test_loader, 1e-6,
                         num_epochs, "NNTI-Task1",
-                        save_name, device, 25)
+                        save_name, device, 5)
