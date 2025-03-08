@@ -303,9 +303,7 @@ def supervised_training_lrs_val(regression_model, train_loader, val_loader, test
         else:
             count += 1
 
-        print(f"Epoch {epoch+1}, Loss: {train_losses/len(train_loader.dataset)}, 
-                                 Val loss: {epoch_val_loss},
-                                 Count: {count}")
+        print(f"Epoch {epoch+1}, Loss: {train_losses/len(train_loader.dataset)}, Val loss: {epoch_val_loss}, Count: {count}")
 
         ### testing
         regression_model.eval()
