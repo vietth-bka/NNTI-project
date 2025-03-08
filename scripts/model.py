@@ -4,7 +4,7 @@ class MoLFormerWithRegressionHead(nn.Module):
     # TODO: your code goes here
     def __init__(self, model):
         super(MoLFormerWithRegressionHead, self).__init__()
-        self.base_model = model
+        self.model = model
         self.regression_head = nn.Linear(model.config.hidden_size, 1)
 
     def forward(self, input_ids, attention_mask):
