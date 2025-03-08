@@ -65,7 +65,7 @@ def influence_based_selection(ext_data, influences, n):
     Now de approximates 1/n > 0 (adding data), then dL = 1/n * I_up_loss. 
     So for smaller dL, we want I_up_loss to be as small as possible. 
     """
-    selected_indices = np.argsort(influences)[:n]
+    selected_indices = np.argsort(influences)[-n:]
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 

@@ -20,7 +20,7 @@ def random_selection(ext_data, n):
     Randomly select n data points from the external dataset.
     """
     random.seed(42)
-    selected_indices = random.sample(range(len(ext_data)), k=n)    
+    selected_indices = random.sample(range(len(ext_data)), k=n)
     ext_set = [{'SMILES': ext_data['SMILES'][i], 'label': ext_data['Label'][i]} for i in selected_indices]
     return ext_set
 

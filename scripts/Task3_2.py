@@ -135,10 +135,13 @@ if __name__ == "__main__":
     print_trainable_parameters(model)
 
     if PEFT == "bitfit":
+        print("\nFine-tuning with bitfit!")
         regression_model = bitfit(model).to(device)
     elif PEFT == "LoRA":
+        print("\nFine-tuning with LoRA!")
         regression_model = LoRA(model).to(device)
     elif PEFT == "iA3":
+        print("\nFine-tuning with iA3!")
         regression_model = iA3(model).to(device)
     else:
         print("INVALID peft!")

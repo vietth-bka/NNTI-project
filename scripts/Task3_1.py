@@ -89,7 +89,7 @@ def generate_method(choice, ext_data, model=None, tokenizer=None, influences=Non
 if __name__ == "__main__":
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
-    CHOICE = "loss_based"
+    CHOICE = "baseline"
     FRACTION = 0
 
     # initialize tokenizer
