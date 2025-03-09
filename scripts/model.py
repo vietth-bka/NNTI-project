@@ -25,3 +25,6 @@ class HiddenModel(nn.Module):
     def forward(self, input_ids=None, attention_mask=None, inputs_embeds=None, labels=None, output_attentions=None, output_hidden_states=None, return_dict=None, task_ids=None, **kwargs):
         model_output = self.model(input_ids, attention_mask)
         return model_output
+    
+    def save_pretrained(self, save_name):
+        self.model.save_pretrained(save_name)

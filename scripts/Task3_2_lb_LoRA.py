@@ -74,9 +74,9 @@ if __name__ == "__main__":
     # TODO: your code goes here
     DATASET_PATH = "scikit-fingerprints/MoleculeNet_Lipophilicity"
     MODEL_NAME = "ibm/MoLFormer-XL-both-10pct"
-    CHOICE = "baseline"
-    FRACTION = 0
-    PEFT = "bitfit"
+    CHOICE = "loss_based"
+    FRACTION = 75
+    PEFT = "LoRA"
 
     # initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, deterministic_eval=True, trust_remote_code=True)
@@ -157,6 +157,6 @@ if __name__ == "__main__":
     supervised_training_lrs_val(regression_model,
                         train_loader,
                         val_loader,
-                        test_loader, 1e-6,
+                        test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
                         save_name, device, 101)

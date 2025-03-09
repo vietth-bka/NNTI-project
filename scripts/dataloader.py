@@ -2,28 +2,9 @@ import torch
 from torch.utils.data import DataLoader, Dataset, Subset, random_split
 import pandas as pd
 import random
-from rdkit import Chem
-
-def augment_smiles(smiles, augment_prob=0.5):
-    """
-    Augment a SMILES string by randomly generating an alternative
-    SMILES representation using RDKit, with probability augment_prob.
-    If augmentation fails, return the original SMILES.
-    """
-    if random.random() < augment_prob:
-        try:
-            mol = Chem.MolFromSmiles(smiles)
-            if mol is None:
-                return smiles
-            # Generate a random SMILES string (different atom ordering)
-            return Chem.MolToSmiles(mol, doRandom=True)
-        except Exception as e:
-            return smiles
-    else:
-        return smiles
 
 class SMILESDataset(Dataset):
-    def __init__(self, dataset, tokenizer, augment=False):
+    def __init__(self, dataset, tokenizer):
         self.dataset = dataset
         self.tokenizer = tokenizer
         self.augment = augment
@@ -32,10 +13,7 @@ class SMILESDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        smiles = self.dataset[idx]['SMILES']
-
-        if self.augment:
-            smiles = augment_smiles(smiles)            
+        smiles = self.dataset[idx]['SMILES']        
 
         encoded = self.tokenizer(smiles, return_tensors='pt', padding='max_length', max_length=512, truncation=True)
         encoded = {k: v.squeeze() for k, v in encoded.items()}
