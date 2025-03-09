@@ -46,7 +46,7 @@ def LoRA(model):
     task_type=TaskType.SEQ_CLS,
     inference_mode=False,
     r=8,            # low-rank dimension
-    lora_alpha=8,  # scaling factor
+    lora_alpha=16,  # scaling factor
     lora_dropout=0.1,
     bias="none",
     # target_modules=["query", "value", "key", "dense"],
@@ -151,11 +151,11 @@ if __name__ == "__main__":
     print(regression_model.regression_head.weight.requires_grad)
     print(regression_model.regression_head.bias.requires_grad)
     # start training
-    num_epochs = 50
+    num_epochs = 25
     save_name = f"{CHOICE}_{PEFT}_{str(FRACTION)}_val_lrs_ftMLM"
     supervised_training_lrs_val(regression_model,
                         train_loader,
                         val_loader,
-                        test_loader, 1e-4,
+                        test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
                         save_name, device, 101)
