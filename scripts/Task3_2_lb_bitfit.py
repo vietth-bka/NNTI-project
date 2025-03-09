@@ -46,7 +46,7 @@ def LoRA(model):
     task_type=TaskType.SEQ_CLS,
     inference_mode=False,
     r=8,            # low-rank dimension
-    lora_alpha=16,  # scaling factor
+    lora_alpha=8,  # scaling factor
     lora_dropout=0.1,
     bias="none",
     # target_modules=["query", "value", "key", "dense"],

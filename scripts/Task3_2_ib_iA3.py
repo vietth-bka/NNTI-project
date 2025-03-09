@@ -151,11 +151,11 @@ if __name__ == "__main__":
     print(regression_model.regression_head.weight.requires_grad)
     print(regression_model.regression_head.bias.requires_grad)
     # start training
-    num_epochs = 100
+    num_epochs = 25
     save_name = f"{CHOICE}_{PEFT}_{str(FRACTION)}_val_lrs_ftMLM"
     supervised_training_lrs_val(regression_model,
                         train_loader,
                         val_loader,
-                        test_loader, 5e-6,
+                        test_loader, 5e-5,
                         num_epochs, "NNTI-Task1",
                         save_name, device, 101)
