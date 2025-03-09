@@ -7,7 +7,6 @@ class SMILESDataset(Dataset):
     def __init__(self, dataset, tokenizer):
         self.dataset = dataset
         self.tokenizer = tokenizer
-        self.augment = augment
 
     def __len__(self):
         return len(self.dataset)
