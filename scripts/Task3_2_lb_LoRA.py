@@ -111,8 +111,7 @@ if __name__ == "__main__":
         ext_set = []
 
     subtrain_indices, val_indices = train_test_split(range(len(train_set)), test_size=0.15, random_state=42)
-    # actual_train_set = [train_set[i] for i in subtrain_indices] + ext_set
-    actual_train_set = ext_set
+    actual_train_set = [train_set[i] for i in subtrain_indices] + ext_set
     val_set = [train_set[i] for i in val_indices]
 
     train_dataset = SMILESDataset(actual_train_set, tokenizer)
@@ -152,7 +151,7 @@ if __name__ == "__main__":
     print(regression_model.regression_head.weight.requires_grad)
     print(regression_model.regression_head.bias.requires_grad)
     # start training
-    num_epochs = 100
+    num_epochs = 50
     save_name = f"{CHOICE}_{PEFT}_{str(FRACTION)}_val_lrs_ftMLM"
     supervised_training_lrs_val(regression_model,
                         train_loader,
