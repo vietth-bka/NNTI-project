@@ -258,7 +258,7 @@ def supervised_training_lrs_val(regression_model, train_loader, val_loader, test
     scheduler = get_scheduler(
         name="linear",
         optimizer=optimizer,
-        num_warmup_steps=int(0.1 * num_training_steps),
+        num_warmup_steps=int(0.06 * num_training_steps),
         num_training_steps=num_training_steps
     )
     criterion = nn.MSELoss()

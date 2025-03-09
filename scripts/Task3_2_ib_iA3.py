@@ -157,6 +157,6 @@ if __name__ == "__main__":
     supervised_training_lrs_val(regression_model,
                         train_loader,
                         val_loader,
-                        test_loader, 5e-5,
+                        test_loader, 5e-6,
                         num_epochs, "NNTI-Task1",
                         save_name, device, 101)
