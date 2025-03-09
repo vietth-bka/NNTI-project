@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     # prepare model for training
     # model preparation
-    model = AutoModel.from_pretrained("../baseline_0_val_lrs_ftMLM-lrs-model", deterministic_eval=True, trust_remote_code=True)
+    model = AutoModel.from_pretrained("./baseline_0_val_lrs_ftMLM-lrs-model", deterministic_eval=True, trust_remote_code=True)
     model = HiddenModel(model)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print_trainable_parameters(model)
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     else:
         print("INVALID peft!")
         exit(-1)
-    regression_model.regression_head.load_state_dict(torch.load("../baseline_0_val_lrs_ftMLM-lrs-model/baseline_0_val_lrs_ftMLM_head.pth", weights_only=True))
+    regression_model.regression_head.load_state_dict(torch.load("./baseline_0_val_lrs_ftMLM-lrs-model/baseline_0_val_lrs_ftMLM_head.pth", weights_only=True))
     print(regression_model.regression_head.weight.requires_grad)
     print(regression_model.regression_head.bias.requires_grad)
     # start training
